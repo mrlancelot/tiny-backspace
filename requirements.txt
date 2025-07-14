@@ -1,0 +1,6 @@
+# Daytona SDK for managing development environments
+daytona
+
+# Optional: Additional tools for development
+requests
+python-dotenv

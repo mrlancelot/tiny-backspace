@@ -1,0 +1,67 @@
+# docker-compose.yml for Daytona development environment
+version: '3.8'
+
+services:
+  dev-environment:
+    build: .
+    container_name: daytona-dev-claude-gemini
+    volumes:
+      # Mount current directory as workspace
+      - .:/workspace
+      
+      # Persistent authentication volumes - CRITICAL for avoiding re-login
+      - claude_auth:/home/developer/.claude
+      - gemini_auth:/home/developer/.gemini
+      - gcloud_auth:/home/developer/.config/gcloud
+      - npm_cache:/home/developer/.npm-global
+      
+      # Optional: Mount SSH keys for git operations (read-only)
+      - ~/.ssh:/home/developer/.ssh:ro
+      
+      # Optional: Mount git config
+      - ~/.gitconfig:/home/developer/.gitconfig:ro
+    
+    environment:
+      # Enable Python server if needed
+      - START_PYTHON_SERVER=false
+      
+      # Set API keys if using direct API authentication
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}
+      
+      # Claude Code settings
+      - CLAUDE_CONFIG_DIR=/home/developer/.claude
+      
+      # Gemini CLI settings  
+      - GEMINI_CONFIG_DIR=/home/developer/.gemini
+    
+    ports:
+      # Python development server
+      - "8000:8000"
+      # Add more ports as needed for your development
+      - "3000:3000"
+      - "5000:5000"
+    
+    stdin_open: true
+    tty: true
+    
+    # Network configuration for Daytona compatibility
+    networks:
+      - daytona-network
+
+# Named volumes for persistent authentication
+volumes:
+  claude_auth:
+    driver: local
+  gemini_auth:
+    driver: local
+  gcloud_auth:
+    driver: local
+  npm_cache:
+    driver: local
+
+# Network for Daytona compatibility
+networks:
+  daytona-network:
+    driver: bridge

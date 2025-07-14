@@ -1,0 +1,38 @@
+# Authentication files (security)
+.claude.json
+.claude/
+*.claude.json
+
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Workspace
+workspace/
+test-workspace/
+temp-workspace/
+
+# Logs
+*.log
