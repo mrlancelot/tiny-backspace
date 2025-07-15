@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     agent_type: str = Field(default="claude", env="AGENT_TYPE")
     anthropic_api_key: str = Field(default="", env="ANTHROPIC_API_KEY")
     claude_code_oauth_token: str = Field(default="", env="CLAUDE_CODE_OAUTH_TOKEN")
+    gemini_api_key: str = Field(default="", env="GEMINI_API_KEY")
     
     # GitHub Configuration
     github_token: str = Field(default="", env="GITHUB_TOKEN")

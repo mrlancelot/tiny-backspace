@@ -39,6 +39,9 @@ temp-workspace/
 logs/
 api/*.log
 
+# Test files in root directory
+/test_*.py
+
 # Test coverage
 .coverage
 htmlcov/

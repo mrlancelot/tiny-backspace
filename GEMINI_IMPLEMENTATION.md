@@ -11,6 +11,24 @@ This implementation provides:
 - 📡 Real-time streaming of the coding process via Server-Sent Events
 - 🔒 Secure, isolated execution environments
 
+## Key Features
+
+- ✅ **Gemini CLI Integration** - Uses Google's Gemini for code generation
+- ✅ **Streaming Responses** - Real-time progress via Server-Sent Events
+- ✅ **Automatic PR Creation** - Creates GitHub pull requests automatically
+- ✅ **Sandbox Isolation** - Secure execution in Daytona environments
+- ✅ **Easy CLI Interface** - Simple commands for all operations
+- ✅ **Comprehensive Testing** - Full test suite included
+
+## How It Works
+
+1. **Request received** - API accepts repository URL and coding prompt
+2. **Sandbox created** - Fresh Daytona environment with Gemini CLI
+3. **Repository cloned** - Target repo cloned into sandbox
+4. **Gemini executes** - AI analyzes code and makes changes
+5. **PR created** - Changes committed and PR opened on GitHub
+6. **Response streamed** - Real-time updates via Server-Sent Events
+
 ## Architecture
 
 ### Core Components
@@ -29,6 +47,20 @@ This implementation provides:
    - POST `/code` endpoint for coding requests
    - Streams the entire process via SSE
    - Automatic sandbox cleanup
+
+### Project Structure
+
+```
+tiny-backspace/
+├── gemini_daytona_manager.py    # Core Daytona + Gemini manager
+├── gemini_streaming.py          # Streaming response handler
+├── api/
+│   └── gemini_endpoint.py       # FastAPI server
+├── test_gemini_implementation.py # Test suite
+├── example_api_client.py        # Example API client
+├── run_gemini.sh               # Easy launcher script
+└── GEMINI_IMPLEMENTATION.md    # This documentation
+```
 
 ## Setup
 
@@ -50,7 +82,31 @@ This implementation provides:
 
 ### Quick Start
 
-1. **CLI Usage**:
+1. **Using the run_gemini.sh Script**:
+   ```bash
+   # Start API server
+   ./run_gemini.sh api
+
+   # Run tests
+   ./run_gemini.sh test
+
+   # Create a sandbox
+   ./run_gemini.sh create my-sandbox
+
+   # List sandboxes
+   ./run_gemini.sh list
+
+   # Execute coding task
+   ./run_gemini.sh code <sandbox-id> <repo-url> '<prompt>'
+
+   # Run demo
+   ./run_gemini.sh demo
+
+   # Delete sandbox
+   ./run_gemini.sh delete <sandbox-id>
+   ```
+
+2. **Direct CLI Usage**:
    ```bash
    # Create a Gemini sandbox
    python gemini_daytona_manager.py create my-sandbox
@@ -65,9 +121,11 @@ This implementation provides:
    python gemini_daytona_manager.py delete <sandbox-id>
    ```
 
-2. **API Usage**:
+3. **API Usage**:
    ```bash
    # Start the API server
+   ./run_gemini.sh api
+   # or
    python api/gemini_endpoint.py
 
    # In another terminal, make a request
@@ -77,6 +135,9 @@ This implementation provides:
        "repoUrl": "https://github.com/mrlancelot/tb-test",
        "prompt": "Add a simple README with project description"
      }'
+   
+   # Or use the example client
+   python example_api_client.py
    ```
 
 ## Testing
@@ -95,6 +156,12 @@ This will:
 - ✅ Test API endpoint (optional)
 
 ## API Reference
+
+### Endpoints
+
+- `GET /` - API information
+- `GET /health` - Health check
+- `POST /code` - Create PR from prompt (SSE response)
 
 ### POST /code
 
@@ -132,10 +199,11 @@ data: {"type": "complete", "message": "Task completed successfully", "pr_url": "
 
 ## Security Considerations
 
-- Sandboxes are isolated environments with limited resources
-- Each request runs in a fresh sandbox
-- Sandboxes are automatically cleaned up after use
-- API keys are injected securely as environment variables
+- Each request runs in an isolated Daytona sandbox
+- Sandboxes have limited resources (2 CPU, 4GB RAM)
+- Automatic cleanup after task completion
+- API keys stored securely as environment variables
+- Sandboxes are automatically cleaned up 5 minutes after task completion
 
 ## Troubleshooting
 
@@ -164,6 +232,21 @@ Set `DEBUG=true` in your `.env` file for verbose logging.
 - [ ] Add webhook support for PR status updates
 - [ ] Support for multiple coding agents (Claude, Gemini, etc.)
 - [ ] Advanced telemetry and observability
+
+## Notes
+
+- The Gemini CLI npm package name might need adjustment based on the actual package
+- Ensure your GitHub token has permissions to create PRs on target repositories
+- For the latest updates and full API integration, see the main API at `api/agent_orchestrator.py`
+
+## Demo
+
+Run the included demo to see it in action:
+```bash
+./run_gemini.sh demo
+```
+
+This will create a sandbox and add a README to the test repository!
 
 ## License
 
