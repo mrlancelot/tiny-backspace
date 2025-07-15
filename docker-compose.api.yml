@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  tiny-backspace-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - DEBUG=true
+      - DAYTONA_API_KEY=${DAYTONA_API_KEY}
+      - DAYTONA_API_URL=${DAYTONA_API_URL:-https://app.daytona.io/api}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_USERNAME=${GITHUB_USERNAME}
+      - GITHUB_EMAIL=${GITHUB_EMAIL}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - REQUIRE_AUTH=${REQUIRE_AUTH:-false}
+      - API_KEY=${API_KEY}
+    volumes:
+      - ./api:/app/api:ro
+      - ./streaming_response.py:/app/streaming_response.py:ro
+      - ./daytona_manager_refactored.py:/app/daytona_manager_refactored.py:ro
+      - ./daytona_manager_cleaned.py:/app/daytona_manager_cleaned.py:ro
+      - ./daytona_manager.py:/app/daytona_manager.py:ro
+      - ./permission_manager.py:/app/permission_manager.py:ro
+      - ./enhanced_cli.py:/app/enhanced_cli.py:ro
+    networks:
+      - tiny-backspace
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  tiny-backspace:
+    driver: bridge

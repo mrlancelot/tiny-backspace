@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tiny Backspace - Demo Client</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .output {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+        }
+        
+        .event {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 3px;
+            border-left: 3px solid #007bff;
+            background: white;
+        }
+        
+        .event-start { border-left-color: #28a745; }
+        .event-progress { border-left-color: #17a2b8; }
+        .event-tool { border-left-color: #ffc107; }
+        .event-ai { border-left-color: #6f42c1; }
+        .event-error { border-left-color: #dc3545; background: #f8d7da; }
+        .event-complete { border-left-color: #28a745; background: #d4edda; }
+        .event-pr { border-left-color: #28a745; background: #d1ecf1; }
+        
+        .timestamp {
+            color: #6c757d;
+            font-size: 11px;
+        }
+        
+        .pr-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .pr-link:hover {
+            background: #218838;
+        }
+        
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .status-waiting { background: #e9ecef; color: #495057; }
+        .status-processing { background: #cfe2ff; color: #084298; }
+        .status-success { background: #d1ecf1; color: #0c5460; }
+        .status-error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Tiny Backspace - Autonomous Coding Agent</h1>
+        
+        <form id="codeForm">
+            <div class="form-group">
+                <label for="repoUrl">GitHub Repository URL</label>
+                <input 
+                    type="url" 
+                    id="repoUrl" 
+                    name="repoUrl" 
+                    placeholder="https://github.com/username/repository"
+                    value="https://github.com/octocat/Hello-World"
+                    required
+                />
+            </div>
+            
+            <div class="form-group">
+                <label for="prompt">Coding Prompt</label>
+                <textarea 
+                    id="prompt" 
+                    name="prompt" 
+                    placeholder="Describe what changes you want to make..."
+                    required
+                >Add a Python script that displays system information including OS, Python version, and current time</textarea>
+            </div>
+            
+            <button type="submit" id="submitBtn">
+                Create Pull Request
+            </button>
+        </form>
+        
+        <div id="status" style="display: none;"></div>
+        
+        <div id="output" class="output" style="display: none;">
+            <h3>📡 Live Stream</h3>
+            <div id="events"></div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        
+        document.getElementById('codeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Get form data
+            const repoUrl = document.getElementById('repoUrl').value;
+            const prompt = document.getElementById('prompt').value;
+            
+            // Update UI
+            const submitBtn = document.getElementById('submitBtn');
+            const status = document.getElementById('status');
+            const output = document.getElementById('output');
+            const events = document.getElementById('events');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Processing...';
+            status.style.display = 'block';
+            status.className = 'status-processing';
+            status.textContent = '🔄 Initializing agent...';
+            output.style.display = 'block';
+            events.innerHTML = '';
+            
+            // Close existing connection if any
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            try {
+                // Make API request
+                const response = await fetch('http://localhost:8000/api/code', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ repo_url: repoUrl, prompt: prompt })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // Set up SSE
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const text = decoder.decode(value);
+                    const lines = text.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(line.substring(6));
+                                handleEvent(data);
+                            } catch (e) {
+                                console.error('Failed to parse event:', e);
+                            }
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                status.className = 'status-error';
+                status.textContent = `❌ Error: ${error.message}`;
+                addEvent({
+                    type: 'error',
+                    message: error.message,
+                    timestamp: new Date().toISOString()
+                });
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Pull Request';
+            }
+        });
+        
+        function handleEvent(data) {
+            const status = document.getElementById('status');
+            
+            // Update status based on event type
+            switch (data.type) {
+                case 'start':
+                    status.textContent = '🏁 Request started: ' + data.request_id;
+                    break;
+                case 'progress':
+                    status.textContent = `📊 ${data.stage}: ${data.message} (${data.percentage || 0}%)`;
+                    break;
+                case 'pr_created':
+                    status.className = 'status-success';
+                    status.innerHTML = `✅ Pull Request created! <a href="${data.pr_url}" target="_blank" class="pr-link">View PR</a>`;
+                    break;
+                case 'error':
+                    status.className = 'status-error';
+                    status.textContent = `❌ Error: ${data.message}`;
+                    break;
+                case 'complete':
+                    if (!status.classList.contains('status-error')) {
+                        status.className = 'status-success';
+                        status.textContent = '🎉 Completed successfully!';
+                    }
+                    break;
+            }
+            
+            // Add event to output
+            addEvent(data);
+        }
+        
+        function addEvent(data) {
+            const events = document.getElementById('events');
+            const eventDiv = document.createElement('div');
+            
+            // Determine event class
+            let eventClass = 'event';
+            if (data.type === 'start') eventClass += ' event-start';
+            else if (data.type === 'progress') eventClass += ' event-progress';
+            else if (data.type.startsWith('Tool:')) eventClass += ' event-tool';
+            else if (data.type === 'AI Message') eventClass += ' event-ai';
+            else if (data.type === 'error') eventClass += ' event-error';
+            else if (data.type === 'complete') eventClass += ' event-complete';
+            else if (data.type === 'pr_created') eventClass += ' event-pr';
+            
+            eventDiv.className = eventClass;
+            
+            // Format content
+            let content = `<strong>${data.type}</strong>`;
+            
+            if (data.type === 'progress') {
+                content += `: ${data.message}`;
+                if (data.percentage) content += ` (${data.percentage}%)`;
+            } else if (data.type.startsWith('Tool:')) {
+                if (data.filepath) content += `: ${data.filepath}`;
+                if (data.command) content += `: <code>${data.command}</code>`;
+                if (data.output) content += `<br>Output: ${data.output.substring(0, 100)}...`;
+            } else if (data.type === 'AI Message') {
+                content += `: ${data.message}`;
+            } else if (data.type === 'pr_created') {
+                content += `<br>URL: <a href="${data.pr_url}" target="_blank">${data.pr_url}</a>`;
+                content += `<br>Branch: ${data.branch_name}`;
+                content += `<br>Files changed: ${data.files_changed}`;
+            } else if (data.type === 'error') {
+                content += `: ${data.message}`;
+            }
+            
+            if (data.timestamp) {
+                content += `<br><span class="timestamp">${new Date(data.timestamp).toLocaleTimeString()}</span>`;
+            }
+            
+            eventDiv.innerHTML = content;
+            events.appendChild(eventDiv);
+            
+            // Auto-scroll to bottom
+            events.scrollTop = events.scrollHeight;
+        }
+    </script>
+</body>
+</html>
