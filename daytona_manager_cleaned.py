@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
 
-from daytona import Daytona, DaytonaConfig, CreateSandboxFromImageParams, Resources
+from daytona import Daytona, DaytonaConfig, CreateSandboxFromImageParams, Resources, Image
 
 # Fix Windows console encoding for Unicode emojis
 if sys.platform == "win32":
@@ -43,6 +43,10 @@ class DaytonaManager:
             print(f"❌ Failed to connect to Daytona: {e}")
             sys.exit(1)
     
+    def _print_status(self, message: str):
+        """Print status message"""
+        print(message)
+    
     def create_sandbox(self, name: Optional[str] = None, 
                       sandbox_type: str = "claude",
                       resources: Optional[Dict[str, int]] = None) -> Any:
@@ -58,15 +62,6 @@ class DaytonaManager:
             resources = {"cpu": 2, "memory": 4}
         
         try:
-            # Select image based on sandbox type
-            image_map = {
-                "claude": "node:20-slim",  # Use Node image and install Claude
-                "python": "python:3.11-bullseye",
-                "docker": "docker:20.10-dind"
-            }
-            
-            image = image_map.get(sandbox_type, "ubuntu:latest")
-            
             # Gather all relevant environment variables
             env_vars = {
                 "ANTHROPIC_API_KEY": os.getenv('ANTHROPIC_API_KEY', ''),
@@ -77,6 +72,16 @@ class DaytonaManager:
             for key in ['GEMINI_API_KEY', 'GOOGLE_API_KEY', 'OPENAI_API_KEY']:
                 if os.getenv(key):
                     env_vars[key] = os.getenv(key)
+            
+            # Select image based on sandbox type
+            image_map = {
+                "claude": "node:20-slim",  # Base image - will install Claude
+                # Note: pridhvikrishna/tiny-backspace-claude:latest is available for local use
+                "python": "python:3.11-bullseye",
+                "docker": "docker:20.10-dind"
+            }
+            
+            image = image_map.get(sandbox_type, "ubuntu:latest")
             
             params = CreateSandboxFromImageParams(
                 name=name,
@@ -143,42 +148,9 @@ class DaytonaManager:
             self.setup_claude_auth(sandbox)
     
     def setup_claude_auth(self, sandbox: Any):
-        """Setup Claude authentication using environment variables"""
-        print("🔐 Setting up Claude authentication...")
-        
-        # Check for OAuth token first (preferred)
-        oauth_token = os.getenv('CLAUDE_CODE_OAUTH_TOKEN')
-        api_key = os.getenv('ANTHROPIC_API_KEY')
-        
-        if oauth_token:
-            # Use OAuth token for Claude Code CLI
-            auth_commands = [
-                "mkdir -p ~/.config/claude-code",
-                f'echo \'{{"oauth_token":"{oauth_token}"}}\' > ~/.config/claude-code/auth.json',
-                "chmod 600 ~/.config/claude-code/auth.json",
-            ]
-            print("✅ Using Claude Code OAuth token")
-        elif api_key:
-            # Fallback to API key
-            auth_file_path = os.getenv('CLAUDE_AUTH_FILE', '~/.claude.json')
-            auth_commands = [
-                "mkdir -p $(dirname " + auth_file_path + ")",
-                f'echo \'{{"apiKey":"{api_key}"}}\' > {auth_file_path}',
-                f"chmod 600 {auth_file_path}",
-                f"export ANTHROPIC_API_KEY={api_key}",
-            ]
-            print("✅ Using Anthropic API key")
-        else:
-            print("⚠️  No CLAUDE_CODE_OAUTH_TOKEN or ANTHROPIC_API_KEY found - Claude will need manual authentication")
-            return
-        
-        for cmd in auth_commands:
-            try:
-                sandbox.process.exec(cmd)
-            except Exception as e:
-                print(f"⚠️  Auth setup warning: {e}")
-        
-        print("✅ Authentication configured")
+        """Setup Claude authentication - currently not working with OAuth token"""
+        self._print_status("⚠️  Claude authentication via OAuth token is not working")
+        self._print_status("   Claude will require manual authentication or use --print mode")
     
     def list_sandboxes(self):
         """List all active sandboxes"""

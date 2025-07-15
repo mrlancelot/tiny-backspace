@@ -574,8 +574,8 @@ Instructions:
 
 Start by exploring the repository structure."""
         
-        # Stream Claude execution
-        command = f'cd {self.repo_path} && claude --print "{agent_prompt}"'
+        # Stream Claude execution (using pre-authenticated image)
+        command = f'cd {self.repo_path} && claude "{agent_prompt}"'
         
         print(f"\nDEBUG: Executing Claude command in {self.repo_path}")
         print(f"DEBUG: Command: {command[:100]}...")
