@@ -36,3 +36,20 @@ temp-workspace/
 
 # Logs
 *.log
+logs/
+api/*.log
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
